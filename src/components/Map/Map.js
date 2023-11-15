@@ -1,37 +1,57 @@
-import React, { useRef, useEffect } from "react";
-import MapView from "@arcgis/core/views/MapView";
-import Map from "@arcgis/core/Map";
+import React, { useEffect, useRef } from "react";
+import { loadModules } from "esri-loader";
 
-const MapComponent = () => {
-  const mapDiv = useRef(null);
-
+function ReactMap() {
+  let view;
+  const MapElement = useRef(null);
   useEffect(() => {
-    if (mapDiv.current) {
-      /**
-       * Initialize application
-       */
-      const webmap = new Map({
-        basemap: "dark-gray-vector",
+    loadModules(
+      [
+        "esri/views/MapView",
+        "esri/Map",
+        "esri/config",
+
+        "esri/layers/FeatureLayer", //latest
+      ],
+      {
+        css: true,
+      }
+    ).then(([MapView, Map, esriConfig, FeatureLayer]) => {
+      esriConfig.apiKey = process.env.ARCGIS_API_KEY;
+
+      const map = new Map({
+        basemap: "topo-vector",
       });
 
-      const view = new MapView({
-        container: mapDiv.current, // The id or node representing the DOM element containing the view.
-        map: webmap, // An instance of a Map object to display in the view.
-        center: [-117.149, 32.7353],
-        scale: 10000000, // Represents the map scale at the center of the view.
+      view = new MapView({
+        map: map,
+        center: [-111.876183, 40.758701],
+        zoom: 13,
+        container: MapElement.current,
       });
 
-      return () => view && view.destroy();
-    }
+      const parksLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0",
+      });
+      const trailheadsLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
+      });
+
+      const trailsLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0",
+      });
+
+      view.ui.add("infoDiv", "bottom-left");
+      map.add(parksLayer, 0);
+      map.add(trailsLayer, 0);
+      map.add(trailheadsLayer);
+    });
   }, []);
-
   return (
-    <div
-      className="mapDiv"
-      ref={mapDiv}
-      style={{ height: "100vh", width: "100%" }}
-    ></div>
+    <>
+      <div style={{ height: 800 }} ref={MapElement}></div>
+    </>
   );
-};
+}
 
-export default MapComponent;
+export default ReactMap;
